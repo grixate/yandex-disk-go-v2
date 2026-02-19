@@ -19,10 +19,14 @@ func TestOperationWorkerLifecycle(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		n := atomic.AddInt32(&polls, 1)
 		if n < 2 {
-			fmt.Fprint(w, `{"status":"in-progress"}`)
+			if _, err := fmt.Fprint(w, `{"status":"in-progress"}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 			return
 		}
-		fmt.Fprint(w, `{"status":"success"}`)
+		if _, err := fmt.Fprint(w, `{"status":"success"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	client.workerCfg.PollInterval = 20 * time.Millisecond
@@ -63,7 +67,9 @@ func TestOperationWorkerLifecycle(t *testing.T) {
 func TestOperationWorkerStopContext(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"in-progress"}`)
+		if _, err := fmt.Fprint(w, `{"status":"in-progress"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	if err := client.Worker.Start(context.Background()); err != nil {

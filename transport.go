@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -110,8 +111,15 @@ func (c *Client) doJSON(ctx context.Context, method, path string, query url.Valu
 		}
 
 		if retryableStatus(resp.StatusCode) && attempt < attempts && isIdempotentMethod(method) {
-			io.Copy(io.Discard, resp.Body)
-			resp.Body.Close()
+			if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+				if closeErr := resp.Body.Close(); closeErr != nil {
+					return nil, errors.Join(err, closeErr)
+				}
+				return nil, err
+			}
+			if err := resp.Body.Close(); err != nil {
+				return nil, err
+			}
 			backoff := c.backoff(attempt)
 			if c.hooks.OnRetry != nil {
 				c.hooks.OnRetry(RetryEvent{Attempt: attempt, Method: method, URL: req.URL.String(), StatusCode: resp.StatusCode, NextBackoff: backoff})
@@ -147,11 +155,16 @@ func (c *Client) doRaw(ctx context.Context, req *http.Request) (*http.Response, 
 }
 
 func (c *Client) decodeResponse(resp *http.Response, out any, expected ...int) error {
-	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			return errors.Join(err, closeErr)
+		}
 		return err
+	}
+	closeErr := resp.Body.Close()
+	if closeErr != nil {
+		return closeErr
 	}
 
 	if len(expected) > 0 {

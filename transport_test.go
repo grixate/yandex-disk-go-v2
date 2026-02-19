@@ -14,20 +14,28 @@ func TestDecodeMatrix(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/disk":
-			fmt.Fprint(w, `{"total_space":21474836480}`)
+			if _, err := fmt.Fprint(w, `{"total_space":21474836480}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case "/disk/resources":
 			if r.Method == http.MethodDelete {
 				w.WriteHeader(http.StatusNoContent)
 				return
 			}
 			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=abc","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=abc","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case "/disk/resources/copy":
 			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=abc","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=abc","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case "/disk/public/resources/save-to-disk":
 			w.WriteHeader(http.StatusCreated)
-			fmt.Fprint(w, `{"href":"x","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"x","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -66,7 +74,9 @@ func TestAPIErrorDecode(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, `{"error":"UnauthorizedError","message":"token invalid","description":"bad token"}`)
+		if _, err := fmt.Fprint(w, `{"error":"UnauthorizedError","message":"token invalid","description":"bad token"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	_, err := client.Disk.Get(context.Background(), DiskGetRequest{})
@@ -87,7 +97,9 @@ func TestContextCancellation(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{}`)
+		if _, err := fmt.Fprint(w, `{}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	}))
 	defer ts.Close()
 

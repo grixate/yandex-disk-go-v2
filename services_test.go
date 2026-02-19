@@ -24,6 +24,13 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 	return client
 }
 
+func mustFprint(t *testing.T, w http.ResponseWriter, payload string) {
+	t.Helper()
+	if _, err := fmt.Fprint(w, payload); err != nil {
+		t.Fatalf("write response: %v", err)
+	}
+}
+
 func TestResourcesGetMetaQueryEncoding(t *testing.T) {
 	var gotPath string
 	var gotQuery string
@@ -31,7 +38,7 @@ func TestResourcesGetMetaQueryEncoding(t *testing.T) {
 		gotPath = r.URL.Path
 		gotQuery = r.URL.RawQuery
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"path":"disk:/docs"}`)
+		mustFprint(t, w, `{"path":"disk:/docs"}`)
 	})
 
 	limit := 20
@@ -65,7 +72,7 @@ func TestEmptyOptionOmitted(t *testing.T) {
 			t.Fatalf("raw query = %q", r.URL.RawQuery)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"path":"disk:/a"}`)
+		mustFprint(t, w, `{"path":"disk:/a"}`)
 	})
 
 	_, err := client.Resources.GetMeta(context.Background(), ResourceGetRequest{Path: "disk:/a"})
@@ -124,24 +131,24 @@ func TestServicePathCoverage(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				switch {
 				case r.URL.Path == "/disk":
-					fmt.Fprint(w, `{}`)
+					mustFprint(t, w, `{}`)
 				case r.URL.Path == "/disk/resources":
 					if r.Method == http.MethodPut {
 						w.WriteHeader(http.StatusCreated)
 					}
-					fmt.Fprint(w, `{"href":"x","method":"GET","templated":false}`)
+					mustFprint(t, w, `{"href":"x","method":"GET","templated":false}`)
 				case r.URL.Path == "/disk/resources/files", r.URL.Path == "/disk/resources/last-uploaded":
-					fmt.Fprint(w, `{"items":[]}`)
+					mustFprint(t, w, `{"items":[]}`)
 				case r.URL.Path == "/disk/resources/upload":
-					fmt.Fprint(w, `{"href":"u","method":"PUT","templated":false}`)
+					mustFprint(t, w, `{"href":"u","method":"PUT","templated":false}`)
 				case r.URL.Path == "/disk/resources/download":
-					fmt.Fprint(w, `{"href":"d","method":"GET","templated":false}`)
+					mustFprint(t, w, `{"href":"d","method":"GET","templated":false}`)
 				case r.URL.Path == "/disk/public/resources":
-					fmt.Fprint(w, `{"public_key":"k"}`)
+					mustFprint(t, w, `{"public_key":"k"}`)
 				case r.URL.Path == "/disk/trash/resources":
 					w.WriteHeader(http.StatusNoContent)
 				case r.URL.Path == "/disk/operations/id":
-					fmt.Fprint(w, `{"status":"success"}`)
+					mustFprint(t, w, `{"status":"success"}`)
 				default:
 					w.WriteHeader(http.StatusNotFound)
 				}

@@ -13,7 +13,7 @@ func ExampleClient_Disk() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/disk" {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"total_space":10,"used_space":3}`)
+			_, _ = fmt.Fprint(w, `{"total_space":10,"used_space":3}`)
 			return
 		}
 		w.WriteHeader(http.StatusNotFound)

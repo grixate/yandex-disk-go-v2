@@ -86,8 +86,11 @@ func (s *UploadsService) OpenDownload(ctx context.Context, req DownloadURLReques
 	}
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		return nil, s.client.apiErrorFromResponse(resp, body)
+		apiErr := s.client.apiErrorFromResponse(resp, body)
+		if err := resp.Body.Close(); err != nil {
+			return nil, errors.Join(apiErr, err)
+		}
+		return nil, apiErr
 	}
 	return resp.Body, nil
 }
@@ -110,11 +113,17 @@ func (s *UploadsService) UploadByLink(ctx context.Context, link *ResourceUploadL
 	if err != nil {
 		return ActionResult{}, err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 		body, _ := io.ReadAll(resp.Body)
-		return ActionResult{}, s.client.apiErrorFromResponse(resp, body)
+		apiErr := s.client.apiErrorFromResponse(resp, body)
+		if err := resp.Body.Close(); err != nil {
+			return ActionResult{}, errors.Join(apiErr, err)
+		}
+		return ActionResult{}, apiErr
+	}
+	if err := resp.Body.Close(); err != nil {
+		return ActionResult{}, err
 	}
 
 	result := ActionResult{StatusCode: resp.StatusCode}
@@ -184,10 +193,15 @@ func (s *UploadsService) UploadInChunks(ctx context.Context, link *ResourceUploa
 		}
 		if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusAccepted {
 			body, _ := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			return ActionResult{}, s.client.apiErrorFromResponse(resp, body)
+			apiErr := s.client.apiErrorFromResponse(resp, body)
+			if err := resp.Body.Close(); err != nil {
+				return ActionResult{}, errors.Join(apiErr, err)
+			}
+			return ActionResult{}, apiErr
 		}
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			return ActionResult{}, err
+		}
 		start += int64(n)
 	}
 

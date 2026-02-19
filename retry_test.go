@@ -16,10 +16,14 @@ func TestRetryOnGet(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		if n < 3 {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprint(w, `{"error":"InternalError"}`)
+			if _, err := fmt.Fprint(w, `{"error":"InternalError"}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 			return
 		}
-		fmt.Fprint(w, `{}`)
+		if _, err := fmt.Fprint(w, `{}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	client.retry = RetryPolicy{MaxRetries: 4, BaseDelay: time.Millisecond, MaxDelay: 5 * time.Millisecond, Jitter: 0}
@@ -38,7 +42,9 @@ func TestNoRetryOnPost(t *testing.T) {
 		atomic.AddInt32(&attempts, 1)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, `{"error":"InternalError"}`)
+		if _, err := fmt.Fprint(w, `{"error":"InternalError"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	client.retry = RetryPolicy{MaxRetries: 4, BaseDelay: time.Millisecond, MaxDelay: 5 * time.Millisecond, Jitter: 0}

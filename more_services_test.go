@@ -75,40 +75,62 @@ func TestUncoveredServicesAndUploads(t *testing.T) {
 		switch {
 		case r.URL.Path == "/disk/resources/public":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"items":[],"type":"file"}`)
+			if _, err := fmt.Fprint(w, `{"items":[],"type":"file"}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources" && r.Method == http.MethodPatch:
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"path":"disk:/x","custom_properties":{"a":1}}`)
+			if _, err := fmt.Fprint(w, `{"path":"disk:/x","custom_properties":{"a":1}}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources/move":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=mv","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=mv","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources/publish":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"href":"pub","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"pub","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources/unpublish":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"href":"unpub","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"unpub","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/public/resources/download":
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"href":"x","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"x","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/trash/resources/restore":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=tr","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=tr","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/trash/resources" && r.Method == http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, `{"path":"trash:/a"}`)
+			if _, err := fmt.Fprint(w, `{"path":"trash:/a"}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources/upload" && r.Method == http.MethodPost:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
-			fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=up","method":"GET","templated":false}`)
+			if _, err := fmt.Fprint(w, `{"href":"https://cloud-api.yandex.net/v1/disk/operations?id=up","method":"GET","templated":false}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/disk/resources/download" && r.Method == http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"href":"%s/file.bin","method":"GET","templated":false}`, ts.URL)
+			if _, err := fmt.Fprintf(w, `{"href":"%s/file.bin","method":"GET","templated":false}`, ts.URL); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/file.bin":
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "abc")
+			if _, err := fmt.Fprint(w, "abc"); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 		case r.URL.Path == "/upload-link":
 			uploadByLinkCalls++
 			w.WriteHeader(http.StatusAccepted)
@@ -161,7 +183,9 @@ func TestUncoveredServicesAndUploads(t *testing.T) {
 		t.Fatalf("open download: %v", err)
 	}
 	got, _ := io.ReadAll(body)
-	body.Close()
+	if err := body.Close(); err != nil {
+		t.Fatalf("close download body: %v", err)
+	}
 	if string(got) != "abc" {
 		t.Fatalf("download body = %q", got)
 	}
@@ -224,11 +248,15 @@ func TestOpenDownloadErrorAndDoRawError(t *testing.T) {
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/disk/resources/download" {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintf(w, `{"href":"%s/err.bin","method":"GET","templated":false}`, ts.URL)
+			if _, err := fmt.Fprintf(w, `{"href":"%s/err.bin","method":"GET","templated":false}`, ts.URL); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, `{"error":"InternalError"}`)
+		if _, err := fmt.Fprint(w, `{"error":"InternalError"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	}))
 	defer ts.Close()
 
@@ -252,11 +280,15 @@ func TestTransportBackoffAndHeaders(t *testing.T) {
 		if retries == 0 {
 			retries++
 			w.WriteHeader(http.StatusTooManyRequests)
-			fmt.Fprint(w, `{"error":"TooManyRequestsError"}`)
+			if _, err := fmt.Fprint(w, `{"error":"TooManyRequestsError"}`); err != nil {
+				t.Fatalf("write response: %v", err)
+			}
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{}`)
+		if _, err := fmt.Fprint(w, `{}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	client.retry = RetryPolicy{MaxRetries: 1, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond, Jitter: 0}
@@ -275,7 +307,9 @@ func TestTransportBackoffAndHeaders(t *testing.T) {
 func TestWorkerWatchValidationAndErrorPath(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, `{"error":"InternalError"}`)
+		if _, err := fmt.Fprint(w, `{"error":"InternalError"}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 
 	if err := client.Worker.Watch(OperationRef{}, nil); err == nil {
@@ -288,7 +322,11 @@ func TestWorkerWatchValidationAndErrorPath(t *testing.T) {
 	if err := client.Worker.Start(context.Background()); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	defer client.Worker.Stop(context.Background())
+	defer func() {
+		if err := client.Worker.Stop(context.Background()); err != nil {
+			t.Fatalf("stop: %v", err)
+		}
+	}()
 
 	ch := make(chan OperationEvent, 1)
 	if err := client.Worker.Watch(OperationRef{Href: "https://cloud-api.yandex.net/v1/disk/operations?id=op"}, func(e OperationEvent) {
@@ -393,7 +431,9 @@ func TestSliceReaderEOF(t *testing.T) {
 func TestOpenDownloadEmptyHref(t *testing.T) {
 	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"href":"","method":"GET","templated":false}`)
+		if _, err := fmt.Fprint(w, `{"href":"","method":"GET","templated":false}`); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 	if _, err := client.Uploads.OpenDownload(context.Background(), DownloadURLRequest{Path: "disk:/a"}); err == nil {
 		t.Fatal("expected empty href error")
